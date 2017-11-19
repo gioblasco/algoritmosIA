@@ -1,8 +1,5 @@
 import sys
 import os
-import csv
-import json
-
 
 class Dataset():
     def __init__(self, arquivo, qtd_atributos, qtd_clusters, qtd_iteracoes):
