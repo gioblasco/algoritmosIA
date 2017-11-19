@@ -3,6 +3,7 @@ import os
 import random
 import math
 import ntpath
+from natsort import natsorted
 
 class Dataset():
     def __init__(self, arquivo, qtd_atributos, qtd_clusters):
@@ -15,7 +16,9 @@ class Dataset():
     def inicializaDataset(self):
         d = {}
         for line in self.arquivo:
+            # checa se está com tab ou espaço
             objeto = line.replace('\n', '').split('\t')
+
             d.setdefault(objeto[0], [])
             for j in range(1, self.qtd_atributos+1):
                 d[objeto[0]].append(float(objeto[j]))
@@ -85,7 +88,7 @@ class Dataset():
 
     def geraResultado(self, novo_arquivo):
         # ordena items
-        particao = sorted(self.particao.items(), key=lambda x: x[1][self.qtd_atributos])
+        particao = natsorted(self.particao.items(), key=lambda x: x[0])
         nome = novo_arquivo + '.clu'
         saida = open(nome, 'w')
         for item in particao:
@@ -126,6 +129,8 @@ def main():
 
     arquivosaida = os.path.dirname(os.path.abspath(__file__)) + '/' + nome + '.clu\n'
     print('Partição resultante em:', arquivosaida)
+
+    print('**Certifique-se de que o dataset tem seus atributos separados por tab. Caso contrário, a partição gerada é errônea.**')
 
     dataset.close()
 
