@@ -7,4 +7,4 @@ Além de utlização do Índice Rand ajustado para avaliação de qualidade das 
 - Python 3.52 ou >
 - virtualenv versão 15 ou >
 
-- Prazo: 15 de dezembro.
+## Prazo: 15 de dezembro!
