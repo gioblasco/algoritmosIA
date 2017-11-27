@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+import gc
 import random
 import math
 import imp
@@ -51,7 +52,9 @@ def main():
             dx =  float(elem1[1]) - float(elements[j][1])
             dy =  float(elem1[2]) - float(elements[j][2])
             matriz_custos[i][j] = math.sqrt( dx*dx + dy*dy)
-            
+
+    # dropar elements[2] e renomear elements[1] para index
+
     print(matriz_custos)
 if __name__ == "__main__":
     main()
