@@ -1,9 +1,24 @@
+#!/usr/bin/env python3
 import sys
 import os
 import random
 import math
+import imp
+try:
+    imp.find_module('natsort')
+except ImportError:
+    print("ERRO: É necessário ter o módulo natsort instalado em sua máquina!",file=sys.stderr);
+    sys.exit(1)
+
+try:
+    imp.find_module('ntpath')
+except ImportError:
+    print("ERRO: É necessário ter o módulo ntpath instalado em sua máquina!",file=sys.stderr);
+    sys.exit(1)
 import ntpath
 from natsort import natsorted
+
+
 
 class Dataset():
     def __init__(self, arquivo, qtd_atributos, qtd_clusters):
@@ -97,6 +112,7 @@ class Dataset():
         saida.close()
 
 def main():
+    
     os.system('cls' if os.name == 'nt' else 'clear')
     if( len(sys.argv)!=4):
         print("Chamada inválida use: $ python kmeans.py <dataset> <qtd_clusters> <qtd_iterações>")
