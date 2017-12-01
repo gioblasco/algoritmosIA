@@ -5,58 +5,176 @@ import gc
 import random
 import math
 import imp
-import numpy
+import numpy as np
 try:
-    imp.find_module('natsort')
+		imp.find_module('natsort')
 except ImportError:
-    print("ERRO: É necessário ter o módulo natsort instalado em sua máquina!",file=sys.stderr);
-    sys.exit(1)
+		print("ERRO: É necessário ter o módulo natsort instalado em sua máquina!",file=sys.stderr);
+		sys.exit(1)
 
 try:
-    imp.find_module('ntpath')
+		imp.find_module('ntpath')
 except ImportError:
-    print("ERRO: É necessário ter o módulo ntpath instalado em sua máquina!",file=sys.stderr);
-    sys.exit(1)
+		print("ERRO: É necessário ter o módulo ntpath instalado em sua máquina!",file=sys.stderr);
+		sys.exit(1)
 import ntpath
 from natsort import natsorted
+global i 
+i = 0
+def mergeSort(alist):
+	global i
+	print("Splitting "+ str(i))
+	i = i + 1
+	if len(alist)>1:
+			mid = len(alist)//2
+			lefthalf = alist[:mid]
+			righthalf = alist[mid:]
+
+			mergeSort(lefthalf)
+			mergeSort(righthalf)
+
+			i=0
+			j=0
+			k=0
+			while i < len(lefthalf) and j < len(righthalf):
+					if lefthalf[i][0] < righthalf[j][0]:
+							alist[k]=lefthalf[i]
+							i=i+1
+					else:
+							alist[k]=righthalf[j]
+							j=j+1
+					k=k+1
+
+			while i < len(lefthalf):
+					alist[k]=lefthalf[i]
+					i=i+1
+					k=k+1
+
+			while j < len(righthalf):
+					alist[k]=righthalf[j]
+					j=j+1
+					k=k+1
+
+
+def find_parent(x):
+	global elements	
+	if(elements[x][1] != x): #if the parent is not me
+		elements[x][1] = find_parent(elements[x][1])   # then my parent is the parent of my parent
+	return elements[x][1] # e caso alguem queira usar meu parent
+
+def union(x,y):
+	global elements
+	xRoot = find_parent(x)
+	yRoot = find_parent(y)
+
+	if(xRoot == yRoot): # if we do not need to merge the elements
+		return False #union not maked
+
+	#otherwise, lets merge in a not naive mode:
+
+	if(elements[xRoot][2] < elements[yRoot][2]):
+		elements[xRoot][1] = yRoot
+
+	elif (elements[xRoot][2] > elements[yRoot][2]):
+		elements[yRoot][1] = xRoot
+	else:
+		elements[yRoot][1] = xRoot
+		elements[xRoot][2] = elements[xRoot][2] +1
+	return True # unioned with sucess.
+	
+def imprime_arquivo(k):
+	global elements
+	global num_lines
+	f = open(os.path.dirname(os.path.abspath(__file__))+"saida_"+str(k)+".txt" ,"w")
+	for c in range(0, num_lines):
+		f.write(str(elements[c][0])+" "+str(find_parent(c)))
+	f.close()
+	print("Salvei o Arquivo "+os.path.dirname(os.path.abspath(__file__))+"saida_"+str(k)+".txt")
+
+# convert an upper triangular Matrix nxn cordinates to an index
+def m2v(x,y,n):
+	return int((( n * (n-1) ) / 2) - ( ( (n-x) * (n-x-1) ) / 2 ) + y - x - 1)
+
+# convert an index to the coordinates of a upper triangular matrix                   
+def v2m(k,n):
+	i = n - 2 - math.floor(math.sqrt(-8*k + 4*n*(n-1)-7)/2.0 - 0.5)
+	j = k + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2
+	return [ i , j ]
+
 
 def main():
-    os.system('cls' if os.name == 'nt' else 'clear')
-    if( len(sys.argv)!=4): 
-        print("Chamada inválida use: $ python3 single-link.py <dataset> <corte_mínimo> <corte_máximo>")
-        sys.exit(1)
-    try:
-        dataset = open(os.path.expanduser(sys.argv[1]), 'r')
-    except (OSError, IOError) as e:
-        print('Erro ao abrir arquivo de dataset')
-        sys.exit(1)
-    print('**Certifique-se de que o dataset tem seus atributos separados por tab.\n  Caso contrário, a partição gerada é errônea.**')
+	global elements
+	global num_lines
+	if( len(sys.argv)!=4): 
+		print("\nChamada inválida use: $ python3 single-link.py <dataset> <corte_mínimo> <corte_máximo>")
+		sys.exit(1)
+	try:
+		dataset = open(os.path.expanduser(sys.argv[1]), 'r')
+	except (OSError, IOError) as e:
+		print('Erro ao abrir arquivo de dataset')
+		sys.exit(1)
+	print('**Certifique-se de que o dataset tem seus atributos separados por tab.\n  Caso contrário, a partição gerada é errônea.**')
 
-    num_lines = sum(1 for line in dataset) - 1
-    dataset.seek(0)
-    matriz_custos = numpy.zeros(shape=(num_lines,num_lines))
-    i = 0
-    elements = []
-    for line in dataset:
-        i = i+1
-        if(i==1):
-            continue
-        elements.append(line.replace('\n', '').split('\t') )
+	num_lines = sum(1 for line in dataset) - 1
+	kmin = int(sys.argv[2])
+	kmax = int(sys.argv[3])
+	dataset.seek(0)
+	vetor_custos = np.zeros(shape=( math.ceil( (num_lines**2 - num_lines) /2), 3 ) ) 
+	datatype = [("distancia",float), ("x",int), ("y",int)]
+	i = 0
+	elements = []
+	for line in dataset:
+			i = i+1
+			if(i==1):
+					continue
+			elements.append(line.replace('\n', '').split('\t') )
+			elements[-1][1] =  float(elements[-1][1])
+			elements[-1][2] =  float(elements[-1][2])
 
-    dataset.close()
+	dataset.close()
 
-    print("Indo Calcular a matriz dissociativa...")
+	print("Indo Calcular o vetor de distâncias...")
+	print("Num_lines é "+ str(num_lines))
+	for i in range(0, num_lines):
+		for j in range(i+1,num_lines): # calculando a distância euclidiana
+			temp = m2v(i,j,num_lines)
+			vetor_custos[ temp ][0] = math.sqrt( (elements[i][1] - elements[j][1]) ** 2 + (elements[i][2] - elements[j][2]) ** 2 )
+			vetor_custos[temp][1] = i
+			vetor_custos[temp][2] = j
+	#np.sort(key=lambda distancia: distancia[0])
+	#vetor_custos = np.array(vetor_custos, dtype=datatype)
+	print(vetor_custos[0])
+	print(vetor_custos[1])
+	print(vetor_custos[2])
+	mergeSort(vetor_custos)
+	print(vetor_custos[0])
+	print(vetor_custos[1])
+	print(vetor_custos[2])
+	
+	
+'''
 
-    for i, elem1 in enumerate(elements):
-        for j in range(i,num_lines):
-            dx =  float(elem1[1]) - float(elements[j][1])
-            dy =  float(elem1[2]) - float(elements[j][2])
-            matriz_custos[i][j] = math.sqrt( dx*dx + dy*dy)
+	print("Definindo clusters iniciais...")
+	for i in range(0, num_lines): # assumindo os clusters iniciais de cada elemento como ele mesmo
+		elements[i][1] = i # Parent
+		elements[i][2] = 0 # Rank
 
-    # dropar elements[2] e renomear elements[1] para index
+	min_distancia = [None,None,None]
 
-    print(matriz_custos)
+	print("Iterando na matriz de custos...")
+	for k in range(0, num_lines - kmin): #agrupe de X clusters até argv[2] Clusters
+		print("Iteração "+str(k)+" de "+str(num_lines))
+		min_distancia[0] = sys.maxsize
+		union(i,j)
+		if( k >= kmin and k<= kmax):
+			imprime_arquivo(k)
+		
+	
+	for v in range(0, num_lines):
+		elements[min_distancia[2]][1] = elements[min_distancia[1]][1] # mesclando elemento ao cluster
+
+	'''
+
 if __name__ == "__main__":
-    main()
+		main()
 
-    
