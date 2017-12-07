@@ -1,7 +1,6 @@
-#include <stdio.h>
+ 	#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <float.h>
 #include <math.h>
 
 /*Data struct for receive the elements from file*/
@@ -21,7 +20,6 @@ typedef struct
 	unsigned x;
 	unsigned y;
 } tupla2;
-
 /*********************************/
 
 /*Disjunt-set Data structure for clusters*/
@@ -34,16 +32,16 @@ typedef struct
 /*****************************************/
 
 /*Functions pre declarations*/
-
+int  m2v(int x,int y,int n);
+int compara_custo(const void *elem1, const void *elem2);
 char merge(unsigned x, unsigned y);
 unsigned find_parent(unsigned x);
-
 void print_file(unsigned index, char* argv);
 /****************************/
 
 /*Global Vars*/
 tupla1 *elements;
-float **dist_matrix;
+tupla2 *dist_vector;
 tupla3 *floresta;
 size_t tam;
 /*****************/
@@ -54,9 +52,10 @@ int main(int argc, char **argv)
 	FILE *arquivo;
 
 	char buffer[128];
-	unsigned i, j, kmin, kmax, katual,ultimok, porcentagem;
+	unsigned i, j, kmin, kmax, katual,ultimok;
+	int temp;
 	float dx, dy;
-	tupla2 menor_atual;
+
 	if(argc!=4 || !sscanf(argv[2], "%u", &kmin) || !sscanf(argv[3], "%u", &kmax))
 	{
 		printf("\nChamada inválida use: $ ./single-link <dataset> <corte_mínimo> <corte_máximo>\n");
@@ -96,28 +95,32 @@ int main(int argc, char **argv)
 
 	printf("Arquivo carregado com sucesso! Calculando distâncias...\n");
 
-	/*Alloc of the matrix lines*/
-	dist_matrix = (float**) malloc(tam  * sizeof(float*));
 
-	if(!dist_matrix)
+	dist_vector = (tupla2*) malloc( sizeof(tupla2) * (( tam* (tam-1) )/2) );
+	if(!dist_vector)
 	{
-			printf("Não houve memória suficiente para alocar a matrix de distâncias!\n");
+			printf("Não houve memória suficiente para alocar o vetor de distâncias!\n");
 			return 1;
 	}
 
-	for(i=1; i<tam; i++)
-	{
-		dist_matrix[i] = malloc ( (i) * sizeof(float) );
-		for(j=0; j<i; j++)
+	for(i=0; i<tam; i++)
+		for(j=i+1; j<tam; j++)
 		{
+			temp = m2v(i,j,tam);
 			dx = (elements[i].D1 - elements[j].D1);
 			dy = (elements[i].D2 - elements[j].D2);
-			dist_matrix[i][j] = sqrt( dx*dx  +  dy*dy );
+			dist_vector[temp].dist = sqrt( dx*dx  +  dy*dy );
+			dist_vector[temp].x = i;
+			dist_vector[temp].y = j;
 		}
-	}
-	printf("Distâncias calculadas com sucesso!\n");
-
-	printf("Criando agrupamentos iniciais...\n");
+	printf("Distâncias calculadas com sucesso! Ordenando Vetor...\n");
+/*	for(i=0;i<(tam*(tam-1))/2;i++)
+		printf("(%f %u %u) ", dist_vector[i].dist, dist_vector[i].x,dist_vector[i].y);
+	printf("\n\n\n\n\n\n");*/
+	qsort(dist_vector,(tam*(tam-1))/2,sizeof(tupla2),compara_custo);
+/*	for(i=0;i<(tam*(tam-1))/2;i++)
+		printf("(%.2f %02u %02u)\t", dist_vector[i].dist, dist_vector[i].x,dist_vector[i].y);*/
+	printf("Vetor ordenado com sucesso! Criando agrupamentos iniciais...\n");
 	
 	floresta = (tupla3*) malloc(sizeof(tupla3) * tam);
 
@@ -131,36 +134,22 @@ int main(int argc, char **argv)
 	/*We don't need more the D1 and D2 at this point, so let's free the array*/
 	free(elements);
 	elements = NULL;
-	printf("Agrupamentos iniciais definidos, memória inicial liberada...\n");
 
-	printf("Iterando na matriz de distância e mesclando agrupamentos...\n");	
-	printf("Porcentagem: 0%%");
+	printf("Agrupamentos iniciais definidos, memória inicial liberada...\n");
+	printf("Iterando no vetor de distância e mesclando agrupamentos...\n");	
 	
-	for(katual = tam, ultimok = 0; katual > kmin; )
+	temp = (tam*(tam-1))/2; /*n²-n*/
+	for(i=0, katual = tam, ultimok = 0; i < temp && katual > kmin; i++)
 	{
-		porcentagem = (unsigned) ((float) (tam - katual) / (float) tam * 100.0);
-		//if(porcentagem % 5 == 0)
-			printf("\rPorcentagem: %u%%", porcentagem);
-		menor_atual.dist = FLT_MAX; /*In the begining the min dist is inf */	
-		for(i = 1 ; i < tam; i++)
-		{
-			for(j=0; j < i; j++)
-			{
-				if(dist_matrix[i][j] < menor_atual.dist && find_parent(i) != find_parent(j))
-				{
-					menor_atual.dist = dist_matrix[i][j];
-					menor_atual.x = i;
-					menor_atual.y = j;
-				}
-			}
+	
+		if(merge(dist_vector[i].x, dist_vector[i].y))
+			katual--;
+
+		if( katual != ultimok && katual >=  kmin && katual <= kmax){
+			print_file(katual, argv[1]);
+			ultimok = katual;
 		}
-		merge(menor_atual.x, menor_atual.y);
-		katual--;
-		if( katual != ultimok && katual >=  kmin && katual <= kmax)
-		{
-				print_file(katual, argv[1]);
-				ultimok = katual;
-		}
+		
 	}
 
 	return 0;
@@ -202,15 +191,10 @@ char merge(unsigned x, unsigned y)
 
 	if(xRoot == yRoot)  /* if we do not need to merge the clusters */
 		return 0; /*union not maked */
-	else if(xRoot < yRoot)
-		floresta[yRoot].parent = x;
-	else
-		floresta[xRoot].parent = y;
-		
 
-	/*otherwise, lets merge in a (!not) naive mode: */
+	/*otherwise, lets merge in a not naive mode: */
 
-	/*if(floresta[xRoot].rank < floresta[yRoot].rank)
+	if(floresta[xRoot].rank < floresta[yRoot].rank)
 		floresta[xRoot].parent = yRoot;
 
 	else if (floresta[xRoot].rank > floresta[yRoot].rank)
@@ -225,11 +209,9 @@ char merge(unsigned x, unsigned y)
 		{
 			floresta[xRoot].parent = yRoot;
 			floresta[yRoot].rank = floresta[yRoot].rank + 1;
-		}*/
+		}
 	return 1;
 }
-
-/* Dado um índice X, imprime ele em um arquivo */
 void print_file(unsigned index, char* argv)
 {
 	unsigned i;
@@ -239,7 +221,7 @@ void print_file(unsigned index, char* argv)
 	strtok(temp1, ".");
 	sprintf(temp2, "%s%u.clu",temp1,index);
 	FILE *output;
-	printf("\nImprimindo o arquivo %s\n", temp2);
+	printf("Imprimindo o arquivo %s\n", temp2);
 	output = fopen(temp2, "w");
 
 	for(i=0; i< tam; i++)
