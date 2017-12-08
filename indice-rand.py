@@ -17,3 +17,5 @@ except ImportError:
     sys.exit(1)
 import ntpath
 from natsort import natsorted
+
+#http://scikit-learn.org/stable/modules/generated/sklearn.metrics.adjusted_rand_score.html usar essa bib
