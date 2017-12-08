@@ -107,19 +107,19 @@ class Dataset():
         nome = novo_arquivo + '.clu'
         saida = open(nome, 'w')
         for item in particao:
-            saida.write(str(item[0]) + '\t' + str(item[1][self.qtd_atributos]) + '\n')
+            saida.write(str(item[0]) + '\t' + str(item[1][self.qtd_atributos]+1) + '\n')
 
         saida.close()
 
 def main():
-    
+
     os.system('cls' if os.name == 'nt' else 'clear')
     if( len(sys.argv)!=4): # sys.argv[1] - arquivo, sys.argv[2] - k clusters, sys.argv[3] - qtd iterações
         print("Chamada inválida use: $ python kmeans.py <dataset> <qtd_clusters> <qtd_iterações>")
         sys.exit(1)
-    
+
     print('**Certifique-se de que o dataset tem seus atributos separados por tab. Caso contrário, a partição gerada é errônea.**')
-    
+
     if(int(sys.argv[3]) < 1):
         print('O mínimo de iterações é 1')
         sys.exit(1)
