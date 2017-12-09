@@ -102,7 +102,7 @@ void merge_matriz(unsigned i, unsigned j)
 	unsigned k;
 	unsigned c,d;
 
-	if(i < j)
+	if(i > j)
 	{
 		k = j;
 		j = i;
