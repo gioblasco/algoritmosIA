@@ -50,6 +50,7 @@ tupla1 *elements;
 float **dist_matrix;
 tupla3 *floresta;
 size_t tam;
+size_t otam;
 /*****************/
 
 
@@ -75,7 +76,7 @@ int main(int argc, char **argv)
 	}
 	printf("**Certifique-se de que o dataset tem seus atributos separados por tab.\n  Caso contrário, a partição gerada é errônea.**\n");
 	tam = 0;
-
+	
 	/*consome primeira linha do arquivo*/
 	for(fgets(buffer,128,arquivo), elements = NULL;	fgets(buffer,128,arquivo)!=0; tam++)
 	{
@@ -95,7 +96,7 @@ int main(int argc, char **argv)
 
 	/*Setting free on non-used memmory: */
 	elements = (tupla1*) realloc(elements, sizeof(tupla1) *	tam );
-	
+	otam = tam;
 
 
 	printf("Arquivo carregado com sucesso! Calculando distâncias...\n");
@@ -139,6 +140,9 @@ int main(int argc, char **argv)
 
 	printf("Iterando na matriz de distância e mesclando agrupamentos...\n");	
 	//printf("Porcentagem: 0%%\n");
+
+	print_file(tam, argv[1]);
+
 	katual = tam;
 	for(ultimok = 0; tam > kmin; )
 	{
@@ -162,7 +166,11 @@ int main(int argc, char **argv)
 			puts("");
 		}
 		printf("\nIndo dar merge em %u e %u\n\n", menor_atual.x, menor_atual.y);
-		merge_matriz(menor_atual.x, menor_atual.y);
+		if(!merge_matriz(menor_atual.x, menor_atual.y))
+		{
+			printf("\nErro de inconsistencia no algorítmo!\n\n");
+			exit(1);
+		}
 
 		if( tam != ultimok && tam >=  kmin && tam <= kmax)
 		{
@@ -250,9 +258,9 @@ void print_file(unsigned index, char* argv)
 	printf("\nImprimindo o arquivo %s\n", temp2);
 	output = fopen(temp2, "w");
 
-	for(i=0; i< tam; i++)
+	for(i=0; i< otam; i++)
 	{
-		fprintf(output, "%s\t%u\n", floresta[i].string, floresta[i].parent + 1);
+		fprintf(output, "%s\t%u\n", floresta[i].string, find_parent(i) + 1);
 	}
 
 	fclose(output);
