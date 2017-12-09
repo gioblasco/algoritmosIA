@@ -142,7 +142,7 @@ def main():
     d.defineParticao(int(sys.argv[3]))
     d.geraResultado(nome)
 
-    arquivosaida = os.path.dirname(os.path.abspath(__file__)) + '\\' if os.name == 'nt' else '/' + nome + '.clu\n'
+    arquivosaida = os.path.dirname(os.path.abspath(__file__)) + '\\' if os.name == 'nt' else nome + '.clu\n'
     print('Partição resultante em:', arquivosaida)
 
 
