@@ -136,12 +136,12 @@ int main(int argc, char **argv)
 	printf("Agrupamentos iniciais definidos, memória inicial liberada...\n");
 
 	printf("Iterando na matriz de distância e mesclando agrupamentos...\n");	
-	printf("Porcentagem: 0%%\n");
+	//printf("Porcentagem: 0%%\n");
 	katual = tam;
 	for(ultimok = 0; tam > kmin; )
 	{
 		porcentagem = (unsigned) ((float) (katual - tam) / (float) katual * 100.0);
-		if(porcentagem % 5 == 0)
+		//if(porcentagem % 5 == 0)
 		//printf("\rPorcentagem: %u%%", porcentagem);
 		
 		menor_atual.dist = FLT_MAX; /*In the begining the min dist is inf */	
