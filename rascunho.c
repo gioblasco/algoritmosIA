@@ -2,7 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
-#define TAMANHO 4
+#define TAMANHO 6
 #include <float.h>
 #include <string.h>
 
@@ -35,13 +35,18 @@ float busca_elemento(int x,int y);
 void merge_matriz(unsigned i, unsigned j);
 unsigned tam;
 
-int main()
+int main(int argc, char** argv)
 {
-	unsigned c,d;
+	unsigned c,d,e;
 	tam = TAMANHO;
 	tupla2 tamanho;
 
-	srand(time(NULL));
+	if(argc!=2)
+	{
+		return 1;
+	}
+	sscanf(argv[1],"%u", &e);
+	srand(e);
 	matriz = (float**) malloc(sizeof(float*) * tam);
 	for(c=0; c < tam;c++)
 	{
@@ -85,7 +90,7 @@ float min(float a, float b)
 
 float busca_elemento(int x,int y)
 {
-	if(x<y)
+	if(x>y)
 		return matriz[x][y];
 	return matriz[y][x];
 }
@@ -97,7 +102,7 @@ void merge_matriz(unsigned i, unsigned j)
 	unsigned k;
 	unsigned c,d;
 
-	if(i > j)
+	if(i < j)
 	{
 		k = j;
 		j = i;
@@ -108,7 +113,7 @@ void merge_matriz(unsigned i, unsigned j)
 
 	///na linha i:
 	for(c=0;c<i;c++)
-		matriz[i][c] = min(matriz[i][c], matriz[j][c]);
+		matriz[i][c] = min(matriz[i][c], busca_elemento(j,c));
 
 	//na coluna i:
 	for(c=i+1;c<tam;c++)
@@ -124,7 +129,7 @@ void merge_matriz(unsigned i, unsigned j)
 	// Removendo a linha
 	for(c = j; c < tam-1; c++)
 	{
-		memcpy(matriz[j], matriz[j+1], sizeof(float));
+		memcpy(matriz[c], matriz[c+1], sizeof(float) * tam);
 	}
 
 	// Removendo a coluna
