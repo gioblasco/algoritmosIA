@@ -4,6 +4,8 @@
 #include <float.h>
 #include <math.h>
 
+/*https://home.deib.polimi.it/matteucc/Clustering/tutorial_html/hierarchical.html*/
+
 /*Data struct for receive the elements from file*/
 typedef struct 
 {
