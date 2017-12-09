@@ -78,7 +78,10 @@ int main(int argc, char** argv)
 		for(d=0; d<c; d++)
 			printf("%.2f ", matriz[c][d]);
 		
-	
+	for(c=0; c<tam; c++)
+			free(matriz[c]);
+	free(matriz);
+	matriz = NULL;
 	return 0;
 }
 
@@ -102,6 +105,7 @@ void merge_matriz(unsigned i, unsigned j)
 	unsigned k;
 	unsigned c,d;
 
+	/*Como estamos trabalhando com matriz triangular inferior precisamos dessa garantia*/
 	if(i > j)
 	{
 		k = j;
@@ -109,42 +113,42 @@ void merge_matriz(unsigned i, unsigned j)
 		i = k;
 	}
 
-	//pegar todas as aparições de [i] na matriz e substituir por min(d(i), d(j))
+	/* Vamos pegar todas as aparições de (x,i) na matriz e substituir por min( (x,i) , (x,j) )
+	Fazendo assim, no final do calculo com que a linha e a coluna i, na verdade represente ioj (i concatenado j). */
 
-	///na linha i:
+	/*Trocando as linhas i por ioj*/
 	for(c=0;c<i;c++)
 		matriz[i][c] = min(matriz[i][c], busca_elemento(j,c));
 
-	//na coluna i:
+	/* Trocando as colunas i por ioj:*/
 	for(c=i+1;c<tam;c++)
 		matriz[c][i] = min(matriz[c][i], busca_elemento(c,j));
 
-	// A partir de agora a linha e coluna i é (i,j)
+	/* A partir de agora a linha e coluna i é ioj, não precisamos mais da linha e coluna j */
 
-	//salva_informação_de_agrupamento()
+//	merge(i,j);
 
-	// Remove linha e coluna j:
+	/* Removendo linha e coluna j: */
 
-
-	// Removendo a linha
+	/* Removendo a linha j */
 	for(c = j; c < tam-1; c++)
 	{
 		memcpy(matriz[c], matriz[c+1], sizeof(float) * tam);
 	}
 
-	// Removendo a coluna
-	for(c = 0; c < tam-1; c++)
+	/*Realocando a matriz em termos de linhas*/
+	free(matriz[tam-1]);
+	matriz = (float**) realloc(matriz, sizeof(float*)*(tam-1));
+
+	/* Removendo a coluna j, e realocando em uma coluna a menos*/
+	for(c = j+1; c < tam-1; c++)
 	{	
 		for( d = j; d < tam-1; d++)
 			matriz[c][d] = matriz[c][d+1];
 		matriz[c] = (float*) realloc(matriz[c],sizeof(float) * (tam-1));
 	}
 
-	free(matriz[tam-1]);
-	matriz = (float**) realloc(matriz, sizeof(float*)*(tam-1));
+	/*Agora podemos diminuir o tamanho da matriz*/
 	tam--;
-
-
-
 }
 
