@@ -226,7 +226,7 @@ void print_file(unsigned index, char* argv)
 
 	for(i=0; i< tam; i++)
 	{
-		fprintf(output, "%s\t%u\n", floresta[i].string, floresta[i].parent + 1);
+		fprintf(output, "%s\t%u\n", floresta[i].string, find_parent(i) + 1);
 	}
 
 	fclose(output);
