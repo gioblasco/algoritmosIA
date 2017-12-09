@@ -37,7 +37,9 @@ typedef struct
 
 char merge(unsigned x, unsigned y);
 unsigned find_parent(unsigned x);
-
+float min(float a, float b);
+float busca_elemento(int x,int y);
+void merge_matriz(unsigned i, unsigned j);
 void print_file(unsigned index, char* argv);
 /****************************/
 
@@ -73,7 +75,7 @@ int main(int argc, char **argv)
 	tam = 0;
 
 	/*consome primeira linha do arquivo*/
-	for(fgets(buffer,128,arquivo), elements = NULL;					fgets(buffer,128,arquivo)!=0; tam++)
+	for(fgets(buffer,128,arquivo), elements = NULL;	fgets(buffer,128,arquivo)!=0; tam++)
 	{
 		if( tam % 500 == 0)
 		{
@@ -105,7 +107,7 @@ int main(int argc, char **argv)
 			return 1;
 	}
 
-	for(i=1; i<tam; i++)
+	for(i=0; i<tam; i++)
 	{
 		dist_matrix[i] = malloc ( (i) * sizeof(float) );
 		for(j=0; j<i; j++)
@@ -134,18 +136,20 @@ int main(int argc, char **argv)
 	printf("Agrupamentos iniciais definidos, memória inicial liberada...\n");
 
 	printf("Iterando na matriz de distância e mesclando agrupamentos...\n");	
-	printf("Porcentagem: 0%%");
-	
-	for(katual = tam, ultimok = 0; katual > kmin; )
+	printf("Porcentagem: 0%%\n");
+	katual = tam;
+	for(ultimok = 0; tam > kmin; )
 	{
-		porcentagem = (unsigned) ((float) (tam - katual) / (float) tam * 100.0);
-		//if(porcentagem % 5 == 0)
-			printf("\rPorcentagem: %u%%", porcentagem);
+		porcentagem = (unsigned) ((float) (katual - tam) / (float) katual * 100.0);
+		if(porcentagem % 5 == 0)
+		//printf("\rPorcentagem: %u%%", porcentagem);
+		
 		menor_atual.dist = FLT_MAX; /*In the begining the min dist is inf */	
 		for(i = 1 ; i < tam; i++)
 		{
 			for(j=0; j < i; j++)
-			{
+			{	
+				printf("%.2f ", dist_matrix[i][j]);
 				if(dist_matrix[i][j] < menor_atual.dist && find_parent(i) != find_parent(j))
 				{
 					menor_atual.dist = dist_matrix[i][j];
@@ -153,13 +157,15 @@ int main(int argc, char **argv)
 					menor_atual.y = j;
 				}
 			}
+			puts("");
 		}
-		merge(menor_atual.x, menor_atual.y);
-		katual--;
-		if( katual != ultimok && katual >=  kmin && katual <= kmax)
+		printf("\nIndo dar merge em %u e %u\n\n", menor_atual.x, menor_atual.y);
+		merge_matriz(menor_atual.x, menor_atual.y);
+
+		if( tam != ultimok && tam >=  kmin && tam <= kmax)
 		{
-				print_file(katual, argv[1]);
-				ultimok = katual;
+				print_file(tam, argv[1]);
+				ultimok = tam;
 		}
 	}
 
@@ -249,4 +255,74 @@ void print_file(unsigned index, char* argv)
 
 	fclose(output);
 
+}
+
+float min(float a, float b)
+{
+	return ( a<b ) ? a : b ;
+}
+
+
+float busca_elemento(int x,int y)
+{
+	if(x>y)
+		return dist_matrix[x][y];
+	return dist_matrix[y][x];
+}
+
+
+
+void merge_matriz(unsigned i, unsigned j)
+{
+	unsigned k;
+	unsigned c,d;
+
+	/*Como estamos trabalhando com matriz triangular inferior precisamos dessa garantia*/
+	if(i > j)
+	{
+		k = j;
+		j = i;
+		i = k;
+	}
+
+	/* Vamos pegar todas as aparições de (x,i) na matriz e substituir por min( (x,i) , (x,j) )
+	Fazendo assim, no final do calculo com que a linha e a coluna i, na verdade represente ioj (i concatenado j). */
+
+	/*Trocando as linhas i por ioj*/
+	for(c=0;c<i;c++)
+		dist_matrix[i][c] = min(dist_matrix[i][c], busca_elemento(j,c));
+
+	/* Trocando as colunas i por ioj:*/
+	for(c=i+1;c<tam;c++)
+		dist_matrix[c][i] = min(dist_matrix[c][i], busca_elemento(c,j));
+
+	/* A partir de agora a linha e coluna i é ioj, não precisamos mais da linha e coluna j */
+	
+	if(!merge(i,j))
+	{
+		printf("\nDeu um erro de consistência na hora de rodar o algorítimo!\n\n");
+		exit(1);
+	}
+
+	/* Removendo linha e coluna j: */
+
+	/* Removendo a linha j */
+	for(c = j; c < tam-1; c++)
+	{
+		memcpy(dist_matrix[c], dist_matrix[c+1], sizeof(float) * tam);
+	}
+
+	/*Realocando a matriz em termos de linhas*/
+	dist_matrix = (float**) realloc(dist_matrix, sizeof(float*)*(tam-1));
+
+	/* Removendo a coluna j, e realocando em uma coluna a menos*/
+	for(c = j+1; c < tam-1; c++)
+	{	
+		for( d = j; d < tam-1; d++)
+			dist_matrix[c][d] = dist_matrix[c][d+1];
+		dist_matrix[c] = (float*) realloc(dist_matrix[c],sizeof(float) * (tam-1));
+	}
+
+	/*Agora podemos diminuir o tamanho da matriz*/
+	tam--;
 }
