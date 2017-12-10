@@ -35,6 +35,7 @@ typedef struct
 } tupla3;
 /*****************************************/
 
+
 /*Functions pre declarations*/
 
 char merge(unsigned x, unsigned y);
@@ -43,12 +44,16 @@ float min(float a, float b);
 float busca_elemento(int x,int y);
 void merge_matriz(unsigned i, unsigned j);
 void print_file(unsigned index, char* argv);
+unsigned mapear();
+int compara_parent(const void* e1, const void*e2);
+int compara_custo(const void *elem1, const void *elem2);
 /****************************/
 
 /*Global Vars*/
 tupla1 *elements;
 float **dist_matrix;
 tupla3 *floresta;
+unsigned *mapeamento;
 size_t tam;
 size_t otam;
 /*****************/
@@ -155,7 +160,7 @@ int main(int argc, char **argv)
 		{
 			for(j=0; j < i; j++)
 			{	
-				printf("%.2f ", dist_matrix[i][j]);
+			//	printf("%.2f ", dist_matrix[i][j]);
 				if(dist_matrix[i][j] < menor_atual.dist && find_parent(i) != find_parent(j))
 				{
 					menor_atual.dist = dist_matrix[i][j];
@@ -163,14 +168,12 @@ int main(int argc, char **argv)
 					menor_atual.y = j;
 				}
 			}
-			puts("");
+		//	puts("");
 		}
 		printf("\nIndo dar merge em %u e %u\n\n", menor_atual.x, menor_atual.y);
-		if(!merge_matriz(menor_atual.x, menor_atual.y))
-		{
-			printf("\nErro de inconsistencia no algorítmo!\n\n");
-			exit(1);
-		}
+		merge_matriz(menor_atual.x, menor_atual.y);
+		
+		
 
 		if( tam != ultimok && tam >=  kmin && tam <= kmax)
 		{
@@ -248,9 +251,9 @@ char merge(unsigned x, unsigned y)
 /* Dado um índice X, imprime ele em um arquivo */
 void print_file(unsigned index, char* argv)
 {
-	unsigned i;
+	unsigned i,d,t;
 	char temp1[128], temp2[128];
-
+	d = mapear();
 	strcpy(temp1, argv);
 	strtok(temp1, ".");
 	sprintf(temp2, "%s%u.clu",temp1,index);
@@ -260,7 +263,8 @@ void print_file(unsigned index, char* argv)
 
 	for(i=0; i< otam; i++)
 	{
-		fprintf(output, "%s\t%u\n", floresta[i].string, find_parent(i) + 1);
+		t = find_parent(i);
+		fprintf(output, "%s\t%lu\n", floresta[i].string,  ((void*)mapeamento - bsearch((const void*)&t, mapeamento, d, sizeof(unsigned), compara_parent )) + 1);
 	}
 
 	fclose(output);
@@ -335,4 +339,42 @@ void merge_matriz(unsigned i, unsigned j)
 
 	/*Agora podemos diminuir o tamanho da matriz*/
 	tam--;
+}
+
+
+unsigned mapear()
+{
+	unsigned c, d, ultimo;
+	mapeamento = (unsigned*) realloc(mapeamento, sizeof(unsigned)*otam);
+	unsigned *temp = malloc(sizeof(unsigned)*otam);
+
+	for(c=0;c < otam; c++)
+		mapeamento[c] = find_parent(c);
+
+	qsort(mapeamento, otam, sizeof(unsigned), compara_parent);
+
+	for(c=0,d=0, ultimo=-1; c < otam; c++)
+	{
+		if(ultimo != mapeamento[c])
+		{
+			ultimo = mapeamento[c];
+			temp[d++] = ultimo;
+		}
+	}
+	free(mapeamento);
+	temp = (unsigned*) realloc (temp, sizeof(unsigned)*d);
+	mapeamento = temp;
+	
+	return d;
+}
+
+int compara_parent(const void* e1, const void*e2)
+{
+	unsigned *t1 = (unsigned*) e1;
+	unsigned *t2 = (unsigned*) e2;
+	if(t1 < t2)
+		return -1;
+	else if(t1 > t2)
+		return 1;
+	return 0;
 }
