@@ -114,7 +114,7 @@ def main():
 
     os.system('cls' if os.name == 'nt' else 'clear')
     if( len(sys.argv)!=4): # sys.argv[1] - arquivo, sys.argv[2] - k clusters, sys.argv[3] - qtd iterações
-        print("Chamada inválida use: $ python kmeans.py <dataset> <qtd_clusters> <qtd_iterações>")
+        print("Chamada inválida use: $ python3 kmeans.py <dataset> <qtd_clusters> <qtd_iterações>")
         sys.exit(1)
 
     print('**Certifique-se de que o dataset tem seus atributos separados por tab. Caso contrário, a partição gerada é errônea.**')
@@ -136,10 +136,14 @@ def main():
 
     print('Resultado do K-Médias\n')
     print('Arquivo do dataset:', nome)
+    #crio objeto e mando atributos: arquivo, qtd de atributos e qtd_clusters
     d = Dataset(dataset, atributos, int(sys.argv[2]))
     print('Quantidade de iterações:', sys.argv[3])
 
+    #define partição a partir da quantidade de iterações
     d.defineParticao(int(sys.argv[3]))
+
+    #gera resultado no arquivo
     d.geraResultado(nome)
 
     arquivosaida = os.path.dirname(os.path.abspath(__file__)) + '\\' if os.name == 'nt' else nome + '.clu\n'
