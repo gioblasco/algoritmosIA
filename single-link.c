@@ -160,15 +160,15 @@ int main(int argc, char **argv)
 		{
 			for(j=0; j < i; j++)
 			{	
-			//	printf("%.2f ", dist_matrix[i][j]);
-				if(dist_matrix[i][j] < menor_atual.dist && find_parent(i) != find_parent(j))
+				printf("%.2f ", dist_matrix[i][j]);
+				if(dist_matrix[i][j] < menor_atual.dist)
 				{
 					menor_atual.dist = dist_matrix[i][j];
 					menor_atual.x = i;
 					menor_atual.y = j;
 				}
 			}
-		//	puts("");
+			puts("");
 		}
 		printf("\nIndo dar merge em %u e %u\n\n", menor_atual.x, menor_atual.y);
 		merge_matriz(menor_atual.x, menor_atual.y);
@@ -216,35 +216,23 @@ unsigned find_parent(unsigned x)
 
 char merge(unsigned x, unsigned y)
 {
-	unsigned xRoot = find_parent(x);
-	unsigned yRoot = find_parent(y);
+	unsigned z;
+	if(x==y)
+		return 0;
 
-	if(xRoot == yRoot)  /* if we do not need to merge the clusters */
-		return 0; /*union not maked */
-	else if(xRoot < yRoot)
-		floresta[yRoot].parent = x;
-	else
-		floresta[xRoot].parent = y;
-		
+	if(x>y)
+	{
+		z = x;
+		x = y;
+		y = z;
+	}
 
-	/*otherwise, lets merge in a (!not) naive mode: */
+	floresta[y].parent = x;
 
-	/*if(floresta[xRoot].rank < floresta[yRoot].rank)
-		floresta[xRoot].parent = yRoot;
+	for(z=y+1; z < otam; z++)
+		if(floresta[z].parent > y)
+			floresta[z].parent--;
 
-	else if (floresta[xRoot].rank > floresta[yRoot].rank)
-		floresta[yRoot].parent = xRoot;
-	else
-		if(x<y)
-		{
-			floresta[yRoot].parent = xRoot;
-			floresta[xRoot].rank = floresta[xRoot].rank +1;
-		}
-		else
-		{
-			floresta[xRoot].parent = yRoot;
-			floresta[yRoot].rank = floresta[yRoot].rank + 1;
-		}*/
 	return 1;
 }
 
@@ -264,7 +252,7 @@ void print_file(unsigned index, char* argv)
 	for(i=0; i< otam; i++)
 	{
 		t = find_parent(i);
-		fprintf(output, "%s\t%lu\n", floresta[i].string,  ((void*)mapeamento - bsearch((const void*)&t, mapeamento, d, sizeof(unsigned), compara_parent )) + 1);
+		fprintf(output, "%s\t%lu\n", floresta[i].string,  (bsearch((const void*)&t, mapeamento, d, sizeof(unsigned), compara_parent) - (void*)mapeamento)/sizeof(unsigned) + 1);
 	}
 
 	fclose(output);
@@ -372,9 +360,9 @@ int compara_parent(const void* e1, const void*e2)
 {
 	unsigned *t1 = (unsigned*) e1;
 	unsigned *t2 = (unsigned*) e2;
-	if(t1 < t2)
+	if(*t1 < *t2)
 		return -1;
-	else if(t1 > t2)
+	else if(*t1 > *t2)
 		return 1;
 	return 0;
 }
