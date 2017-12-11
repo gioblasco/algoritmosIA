@@ -1,10 +1,7 @@
-#include <stdio.h>
+ 	#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <float.h>
 #include <math.h>
-
-/*https://home.deib.polimi.it/matteucc/Clustering/tutorial_html/hierarchical.html*/
 
 /*Data struct for receive the elements from file*/
 typedef struct 
@@ -23,7 +20,6 @@ typedef struct
 	unsigned x;
 	unsigned y;
 } tupla2;
-
 /*********************************/
 
 /*Disjunt-set Data structure for clusters*/
@@ -35,27 +31,22 @@ typedef struct
 } tupla3;
 /*****************************************/
 
-
 /*Functions pre declarations*/
-
+int  m2v(int x,int y,int n);
+int compara_custo(const void *elem1, const void *elem2);
 char merge(unsigned x, unsigned y);
 unsigned find_parent(unsigned x);
-float min(float a, float b);
-float busca_elemento(int x,int y);
-void merge_matriz(unsigned i, unsigned j);
 void print_file(unsigned index, char* argv);
-unsigned mapear();
 int compara_parent(const void* e1, const void*e2);
-int compara_custo(const void *elem1, const void *elem2);
+unsigned mapear();
 /****************************/
 
 /*Global Vars*/
 tupla1 *elements;
-float **dist_matrix;
+tupla2 *dist_vector;
 tupla3 *floresta;
 unsigned *mapeamento;
 size_t tam;
-size_t otam;
 /*****************/
 
 
@@ -64,9 +55,10 @@ int main(int argc, char **argv)
 	FILE *arquivo;
 
 	char buffer[128];
-	unsigned i, j, kmin, kmax, katual,ultimok, porcentagem;
+	unsigned i, j, kmin, kmax, katual,ultimok;
+	int temp;
 	float dx, dy;
-	tupla2 menor_atual;
+
 	if(argc!=4 || !sscanf(argv[2], "%u", &kmin) || !sscanf(argv[3], "%u", &kmax))
 	{
 		printf("\nChamada inválida use: $ ./single-link <dataset> <corte_mínimo> <corte_máximo>\n");
@@ -81,9 +73,9 @@ int main(int argc, char **argv)
 	}
 	printf("**Certifique-se de que o dataset tem seus atributos separados por tab.\n  Caso contrário, a partição gerada é errônea.**\n");
 	tam = 0;
-	
+
 	/*consome primeira linha do arquivo*/
-	for(fgets(buffer,128,arquivo), elements = NULL;	fgets(buffer,128,arquivo)!=0; tam++)
+	for(fgets(buffer,128,arquivo), elements = NULL;					fgets(buffer,128,arquivo)!=0; tam++)
 	{
 		if( tam % 500 == 0)
 		{
@@ -101,33 +93,37 @@ int main(int argc, char **argv)
 
 	/*Setting free on non-used memmory: */
 	elements = (tupla1*) realloc(elements, sizeof(tupla1) *	tam );
-	otam = tam;
+	
 
 
 	printf("Arquivo carregado com sucesso! Calculando distâncias...\n");
 
-	/*Alloc of the matrix lines*/
-	dist_matrix = (float**) malloc(tam  * sizeof(float*));
 
-	if(!dist_matrix)
+	dist_vector = (tupla2*) malloc( sizeof(tupla2) * (( tam* (tam-1) )/2) );
+	if(!dist_vector)
 	{
-			printf("Não houve memória suficiente para alocar a matrix de distâncias!\n");
+			printf("Não houve memória suficiente para alocar o vetor de distâncias!\n");
 			return 1;
 	}
 
 	for(i=0; i<tam; i++)
-	{
-		dist_matrix[i] = malloc ( (i) * sizeof(float) );
-		for(j=0; j<i; j++)
+		for(j=i+1; j<tam; j++)
 		{
+			temp = m2v(i,j,tam);
 			dx = (elements[i].D1 - elements[j].D1);
 			dy = (elements[i].D2 - elements[j].D2);
-			dist_matrix[i][j] = sqrt( dx*dx  +  dy*dy );
+			dist_vector[temp].dist = sqrt( dx*dx  +  dy*dy );
+			dist_vector[temp].x = i;
+			dist_vector[temp].y = j;
 		}
-	}
-	printf("Distâncias calculadas com sucesso!\n");
-
-	printf("Criando agrupamentos iniciais...\n");
+	printf("Distâncias calculadas com sucesso! Ordenando Vetor...\n");
+/*	for(i=0;i<(tam*(tam-1))/2;i++)
+		printf("(%f %u %u) ", dist_vector[i].dist, dist_vector[i].x,dist_vector[i].y);
+	printf("\n\n\n\n\n\n");*/
+	qsort(dist_vector,(tam*(tam-1))/2,sizeof(tupla2),compara_custo);
+/*	for(i=0;i<(tam*(tam-1))/2;i++)
+		printf("(%.2f %02u %02u)\t", dist_vector[i].dist, dist_vector[i].x,dist_vector[i].y);*/
+	printf("Vetor ordenado com sucesso! Criando agrupamentos iniciais...\n");
 	
 	floresta = (tupla3*) malloc(sizeof(tupla3) * tam);
 
@@ -141,45 +137,22 @@ int main(int argc, char **argv)
 	/*We don't need more the D1 and D2 at this point, so let's free the array*/
 	free(elements);
 	elements = NULL;
+
 	printf("Agrupamentos iniciais definidos, memória inicial liberada...\n");
-
-	printf("Iterando na matriz de distância e mesclando agrupamentos...\n");	
-	//printf("Porcentagem: 0%%\n");
-
-	print_file(tam, argv[1]);
-
-	katual = tam;
-	for(ultimok = 0; tam > kmin; )
+	printf("Iterando no vetor de distância e mesclando agrupamentos...\n");	
+	
+	temp = (tam*(tam-1))/2; /*n²-n*/
+	for(i=0, katual = tam, ultimok = 0; i < temp && katual > kmin; i++)
 	{
-		porcentagem = (unsigned) ((float) (katual - tam) / (float) katual * 100.0);
-		//if(porcentagem % 5 == 0)
-		//printf("\rPorcentagem: %u%%", porcentagem);
-		
-		menor_atual.dist = FLT_MAX; /*In the begining the min dist is inf */	
-		for(i = 1 ; i < tam; i++)
-		{
-			for(j=0; j < i; j++)
-			{	
-				printf("%.2f ", dist_matrix[i][j]);
-				if(dist_matrix[i][j] < menor_atual.dist)
-				{
-					menor_atual.dist = dist_matrix[i][j];
-					menor_atual.x = i;
-					menor_atual.y = j;
-				}
-			}
-			puts("");
-		}
-		printf("\nIndo dar merge em %u e %u\n\n", menor_atual.x, menor_atual.y);
-		merge_matriz(menor_atual.x, menor_atual.y);
-		
-		
+	
+		if(merge(dist_vector[i].x, dist_vector[i].y))
+			katual--;
 
-		if( tam != ultimok && tam >=  kmin && tam <= kmax)
-		{
-				print_file(tam, argv[1]);
-				ultimok = tam;
+		if( katual != ultimok && katual >=  kmin && katual <= kmax){
+			print_file(katual, argv[1]);
+			ultimok = katual;
 		}
+		
 	}
 
 	return 0;
@@ -216,137 +189,67 @@ unsigned find_parent(unsigned x)
 
 char merge(unsigned x, unsigned y)
 {
-	unsigned z;
-	if(x==y)
-		return 0;
+	unsigned xRoot = find_parent(x);
+	unsigned yRoot = find_parent(y);
 
-	if(x>y)
-	{
-		z = x;
-		x = y;
-		y = z;
-	}
+	if(xRoot == yRoot)  /* if we do not need to merge the clusters */
+		return 0; /*union not maked */
 
-	floresta[y].parent = x;
+	/*otherwise, lets merge in a not naive mode: */
 
-	for(z=y+1; z < otam; z++){
-		if(floresta[z].parent > y){
-            for(c=y; c< otam; c++){
-			    if floresta[c].parent = y
-                    floresta[c].parent = x
-            }
-        }
-    }
+	if(floresta[xRoot].rank < floresta[yRoot].rank)
+		floresta[xRoot].parent = yRoot;
 
+	else if (floresta[xRoot].rank > floresta[yRoot].rank)
+		floresta[yRoot].parent = xRoot;
+	else
+		if(x<y)
+		{
+			floresta[yRoot].parent = xRoot;
+			floresta[xRoot].rank = floresta[xRoot].rank +1;
+		}
+		else
+		{
+			floresta[xRoot].parent = yRoot;
+			floresta[yRoot].rank = floresta[yRoot].rank + 1;
+		}
 	return 1;
 }
-
-/* Dado um índice X, imprime ele em um arquivo */
 void print_file(unsigned index, char* argv)
 {
 	unsigned i,d,t;
 	char temp1[128], temp2[128];
-	//d = mapear();
+	d = mapear();
 	strcpy(temp1, argv);
 	strtok(temp1, ".");
 	sprintf(temp2, "%s%u.clu",temp1,index);
 	FILE *output;
-	printf("\nImprimindo o arquivo %s\n", temp2);
+	printf("Imprimindo o arquivo %s\n", temp2);
 	output = fopen(temp2, "w");
 
-	for(i=0; i< otam; i++)
+	for(i=0; i< tam; i++)
 	{
-		//t = find_parent(i);
-		fprintf(output, "%s\t%lu\n", floresta[i].string,  floresta[i].parent + 1);
+		t = find_parent(i);
+		fprintf(output, "%s\t%lu\n", floresta[i].string, (bsearch(&t,mapeamento,d,sizeof(unsigned),compara_parent) - (void*) mapeamento)/sizeof(unsigned) + 1);
 	}
 
 	fclose(output);
 
 }
 
-float min(float a, float b)
-{
-	return ( a<b ) ? a : b ;
-}
-
-
-float busca_elemento(int x,int y)
-{
-	if(x>y)
-		return dist_matrix[x][y];
-	return dist_matrix[y][x];
-}
-
-
-
-void merge_matriz(unsigned i, unsigned j)
-{
-	unsigned k;
-	unsigned c,d;
-
-	/*Como estamos trabalhando com matriz triangular inferior precisamos dessa garantia*/
-	if(i > j)
-	{
-		k = j;
-		j = i;
-		i = k;
-	}
-
-	/* Vamos pegar todas as aparições de (x,i) na matriz e substituir por min( (x,i) , (x,j) )
-	Fazendo assim, no final do calculo com que a linha e a coluna i, na verdade represente ioj (i concatenado j). */
-
-	/*Trocando as linhas i por ioj*/
-	for(c=0;c<i;c++)
-		dist_matrix[i][c] = min(dist_matrix[i][c], busca_elemento(j,c));
-
-	/* Trocando as colunas i por ioj:*/
-	for(c=i+1;c<tam;c++)
-		dist_matrix[c][i] = min(dist_matrix[c][i], busca_elemento(c,j));
-
-	/* A partir de agora a linha e coluna i é ioj, não precisamos mais da linha e coluna j */
-	
-	if(!merge(i,j))
-	{
-		printf("\nDeu um erro de consistência na hora de rodar o algorítimo!\n\n");
-		exit(1);
-	}
-
-	/* Removendo linha e coluna j: */
-
-	/* Removendo a linha j */
-	for(c = j; c < tam-1; c++)
-	{
-		memcpy(dist_matrix[c], dist_matrix[c+1], sizeof(float) * tam);
-	}
-
-	/*Realocando a matriz em termos de linhas*/
-	dist_matrix = (float**) realloc(dist_matrix, sizeof(float*)*(tam-1));
-
-	/* Removendo a coluna j, e realocando em uma coluna a menos*/
-	for(c = j+1; c < tam-1; c++)
-	{	
-		for( d = j; d < tam-1; d++)
-			dist_matrix[c][d] = dist_matrix[c][d+1];
-		dist_matrix[c] = (float*) realloc(dist_matrix[c],sizeof(float) * (tam-1));
-	}
-
-	/*Agora podemos diminuir o tamanho da matriz*/
-	tam--;
-}
-
 
 unsigned mapear()
 {
 	unsigned c, d, ultimo;
-	mapeamento = (unsigned*) realloc(mapeamento, sizeof(unsigned)*otam);
-	unsigned *temp = malloc(sizeof(unsigned)*otam);
+	mapeamento = (unsigned*) realloc(mapeamento, sizeof(unsigned)*tam);
+	unsigned *temp = malloc(sizeof(unsigned)*tam);
 
-	for(c=0;c < otam; c++)
+	for(c=0;c < tam; c++)
 		mapeamento[c] = find_parent(c);
 
-	qsort(mapeamento, otam, sizeof(unsigned), compara_parent);
+	qsort(mapeamento, tam, sizeof(unsigned), compara_parent);
 
-	for(c=0,d=0, ultimo=-1; c < otam; c++)
+	for(c=0,d=0, ultimo=-1; c < tam; c++)
 	{
 		if(ultimo != mapeamento[c])
 		{
