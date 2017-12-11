@@ -37,12 +37,15 @@ int compara_custo(const void *elem1, const void *elem2);
 char merge(unsigned x, unsigned y);
 unsigned find_parent(unsigned x);
 void print_file(unsigned index, char* argv);
+int compara_parent(const void* e1, const void*e2);
+unsigned mapear();
 /****************************/
 
 /*Global Vars*/
 tupla1 *elements;
 tupla2 *dist_vector;
 tupla3 *floresta;
+unsigned *mapeamento;
 size_t tam;
 /*****************/
 
@@ -214,9 +217,9 @@ char merge(unsigned x, unsigned y)
 }
 void print_file(unsigned index, char* argv)
 {
-	unsigned i;
+	unsigned i,d,t;
 	char temp1[128], temp2[128];
-
+	d = mapear();
 	strcpy(temp1, argv);
 	strtok(temp1, ".");
 	sprintf(temp2, "%s%u.clu",temp1,index);
@@ -226,9 +229,48 @@ void print_file(unsigned index, char* argv)
 
 	for(i=0; i< tam; i++)
 	{
-		fprintf(output, "%s\t%u\n", floresta[i].string, find_parent(i) + 1);
+		t = find_parent(i);
+		fprintf(output, "%s\t%lu\n", floresta[i].string, (bsearch(&t,mapeamento,d,sizeof(unsigned),compara_parent) - (void*) mapeamento)/sizeof(unsigned) + 1);
 	}
 
 	fclose(output);
 
+}
+
+
+unsigned mapear()
+{
+	unsigned c, d, ultimo;
+	mapeamento = (unsigned*) realloc(mapeamento, sizeof(unsigned)*tam);
+	unsigned *temp = malloc(sizeof(unsigned)*tam);
+
+	for(c=0;c < tam; c++)
+		mapeamento[c] = find_parent(c);
+
+	qsort(mapeamento, tam, sizeof(unsigned), compara_parent);
+
+	for(c=0,d=0, ultimo=-1; c < tam; c++)
+	{
+		if(ultimo != mapeamento[c])
+		{
+			ultimo = mapeamento[c];
+			temp[d++] = ultimo;
+		}
+	}
+	free(mapeamento);
+	temp = (unsigned*) realloc (temp, sizeof(unsigned)*d);
+	mapeamento = temp;
+	
+	return d;
+}
+
+int compara_parent(const void* e1, const void*e2)
+{
+	unsigned *t1 = (unsigned*) e1;
+	unsigned *t2 = (unsigned*) e2;
+	if(*t1 < *t2)
+		return -1;
+	else if(*t1 > *t2)
+		return 1;
+	return 0;
 }
