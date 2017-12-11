@@ -229,9 +229,14 @@ char merge(unsigned x, unsigned y)
 
 	floresta[y].parent = x;
 
-	for(z=y+1; z < otam; z++)
-		if(floresta[z].parent > y)
-			floresta[z].parent--;
+	for(z=y+1; z < otam; z++){
+		if(floresta[z].parent > y){
+            for(c=y; c< otam; c++){
+			    if floresta[c].parent = y
+                    floresta[c].parent = x
+            }
+        }
+    }
 
 	return 1;
 }
@@ -241,7 +246,7 @@ void print_file(unsigned index, char* argv)
 {
 	unsigned i,d,t;
 	char temp1[128], temp2[128];
-	d = mapear();
+	//d = mapear();
 	strcpy(temp1, argv);
 	strtok(temp1, ".");
 	sprintf(temp2, "%s%u.clu",temp1,index);
@@ -251,8 +256,8 @@ void print_file(unsigned index, char* argv)
 
 	for(i=0; i< otam; i++)
 	{
-		t = find_parent(i);
-		fprintf(output, "%s\t%lu\n", floresta[i].string,  (bsearch((const void*)&t, mapeamento, d, sizeof(unsigned), compara_parent) - (void*)mapeamento)/sizeof(unsigned) + 1);
+		//t = find_parent(i);
+		fprintf(output, "%s\t%lu\n", floresta[i].string,  floresta[i].parent + 1);
 	}
 
 	fclose(output);

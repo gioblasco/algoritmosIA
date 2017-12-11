@@ -31,7 +31,7 @@ class Dataset():
     def inicializaDataset(self):
         d = {}
         for line in self.arquivo:
-            objeto = line.split('\t')
+            objeto = line.replace('\n', '').split('\t')
 
             d.setdefault(objeto[0], [])
             for j in range(1, self.qtd_atributos+1):
