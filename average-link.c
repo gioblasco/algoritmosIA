@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
 	if(!dist_matrix)
 	{
-			printf("Não houve memória suficiente para alocar a matrix de distâncias!\n");
+			printf("Não houve memória suficiente para alocar a matriz de distâncias!\n");
 			return 1;
 	}
 
@@ -103,6 +103,9 @@ int main(int argc, char **argv)
 
 	printf("Criando agrupamentos iniciais...\n");
 	init_clusters();
+
+    //merge_matriz();
+    //merge_clusters();
 
 	return 0;
 }
