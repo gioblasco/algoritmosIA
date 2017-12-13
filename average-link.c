@@ -104,6 +104,11 @@ int main(int argc, char **argv)
 	printf("Criando agrupamentos iniciais...\n");
 	init_clusters();
 
+	while(cluster_qt > kmin)
+	{
+		
+	}
+
 	return 0;
 }
 
