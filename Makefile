@@ -1,5 +1,5 @@
-make:
-	gcc -g -Wall -o single-link single-link.c -lm
 
-r:
-	gcc -g -Wall -o average-link average-link.c -lm
+single:
+	gcc -g -Wall -o single-link single-link.c -lm
+avg:
+	gcc -g -Wall -o avg-link average-link.c -lm

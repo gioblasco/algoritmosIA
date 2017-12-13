@@ -104,11 +104,15 @@ int main(int argc, char **argv)
 	printf("Criando agrupamentos iniciais...\n");
 	init_clusters();
 
+<<<<<<< HEAD
+    //merge_matriz();
+    //merge_clusters();
+=======
 	while(cluster_qt > kmin)
 	{
-	  //merge_matriz();
-    	  //merge_clusters();
+		
 	}
+>>>>>>> d88367a16ce3519896d792b1828565a55737d894
 
 	return 0;
 }
