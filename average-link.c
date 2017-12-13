@@ -106,8 +106,12 @@ int main(int argc, char **argv)
 
 	while(cluster_qt > kmin)
 	{
-	  //merge_matriz();
-    	  //merge_clusters();
+		for(i=0; i< elements_qt; i++){
+			for(j=0; i< elements_qt; i++){
+	  	//merge_matriz(i, j);
+			}
+		}
+    //merge_clusters();
 	}
 
 	return 0;
