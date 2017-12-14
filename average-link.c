@@ -63,9 +63,11 @@ int main(int argc, char **argv) /* A MAIN TA PRONTA, NÃO CAGAR A NÃO SER QUE S
 {
 	FILE *arquivo;
 	char buffer[128];
-	unsigned i, j, kmin, kmax, porcentagem;
+	unsigned i, j, kmin, kmax, porcentagem, ultima_porcentagem;
 	float dx, dy;
 	Menor_atual menor_atual;
+	char temp1[128], temp2[128];
+	
 	if(argc!=4 || !sscanf(argv[2], "%u", &kmin) || !sscanf(argv[3], "%u", &kmax))
 	{
 		printf("\nChamada inválida use: $ ./avg-link <dataset> <corte_mínimo> <corte_máximo>\n");
@@ -75,7 +77,7 @@ int main(int argc, char **argv) /* A MAIN TA PRONTA, NÃO CAGAR A NÃO SER QUE S
 	arquivo = fopen(argv[1], "r");
 	if(!arquivo)
 	{
-		printf("\nErro ao abrir arquivo de dataset\n");
+		fprintf(stderr,"\nErro ao abrir arquivo de dataset\n");
 		return 1;
 	}
 	printf("**Certifique-se de que o dataset tem seus atributos separados por tab.\n  Caso contrário, a partição gerada é errônea.**\n");
@@ -111,7 +113,7 @@ int main(int argc, char **argv) /* A MAIN TA PRONTA, NÃO CAGAR A NÃO SER QUE S
 	{
 		porcentagem = (unsigned) (i / (float) elements_qt);
 		if(porcentagem%5==0)
-		printf("\rPorcentagem: %u", porcentagem);
+			printf("\rPorcentagem: %u%%", porcentagem);
 		dist_matrix[i] = malloc ( (i) * sizeof(float) );
 		for(j=0; j<i; j++)
 		{
@@ -134,8 +136,17 @@ int main(int argc, char **argv) /* A MAIN TA PRONTA, NÃO CAGAR A NÃO SER QUE S
 	printf("Criando agrupamentos iniciais...\n");
 	init_clusters();
 	printf("Agrupamentos Iniciais criados com sucesso, iterando o algoritmo.\n");
+	fprintf(stderr, "Porcentagem: 0%%"	);
+	//fflush(stdout);
+	ultima_porcentagem = 101;
 	while(cluster_qt >= kmin)
 	{
+		porcentagem = (unsigned) ( 100 * (elements_qt - cluster_qt)   / (float) (elements_qt-kmin));
+		if(porcentagem != ultima_porcentagem)
+		{
+			ultima_porcentagem = porcentagem;
+			fprintf(stderr, "\rPorcentagem: %u%%", porcentagem);
+		}
 		if(cluster_qt >= kmin && cluster_qt <= kmax)
 			print_file(cluster_qt, argv[1]);
 
@@ -149,10 +160,18 @@ int main(int argc, char **argv) /* A MAIN TA PRONTA, NÃO CAGAR A NÃO SER QUE S
 					menor_atual.x = i;
 					menor_atual.y = j;
 				}
-		printf("Indo mesclar os índices: %u e %u\n", menor_atual.x, menor_atual.y);
+		//printf("Indo mesclar os índices: %u e %u\n", menor_atual.x, menor_atual.y);
 		merge_matriz(menor_atual.x, menor_atual.y);
 	}
+	printf("\rPorcentagem: 100%%\n");
 
+	strcpy(temp1, argv[1]);
+	strtok(temp1, ".");
+	for(i=kmin; i <= kmax; i++)
+	{
+		sprintf(temp2, "%s%u.clu",temp1,i);
+		printf("Arquivo %s impresso com suceso\n", temp2);
+	}
 	return 0;
 }
 
@@ -262,13 +281,13 @@ void merge_matriz(unsigned i, unsigned j)
 	{	
 		for( t = j; t < cluster_qt-1; t++)
 			dist_matrix[c][t] = dist_matrix[c][t+1];
-		dist_matrix[c] = (float*) realloc(dist_matrix[c],sizeof(float) * (cluster_qt-1));
+		//dist_matrix[c] = (float*) realloc(dist_matrix[c],sizeof(float) * (c-1));
 	}
 
 	/*Agora podemos diminuir o tamanho da matriz*/
 	if(!merge_clusters(i,j))
 	{
-		printf("\nDeu um erro de consistência na hora de rodar o algorítimo!\n\n");
+		fprintf(stderr,"\nDeu um erro de consistência na hora de rodar o algorítimo!\n\n");
 		exit(1);
 	}
 }
@@ -288,15 +307,20 @@ float busca_elemento(int x,int y)
 
 void print_file(unsigned index, char* argv)
 {
-	unsigned i/*,d,t;*/;
+	unsigned i;
 	char temp1[128], temp2[128];
-	//d = mapear();
+
 	strcpy(temp1, argv);
 	strtok(temp1, ".");
 	sprintf(temp2, "%s%u.clu",temp1,index);
 	FILE *output;
-	printf("Imprimindo o arquivo %s\n", temp2);
+
 	output = fopen(temp2, "w");
+	if(!output)
+	{
+		fprintf(stderr, "Erro ao abrir o Arquivo de saída, verifique as permissões e espaço em disco e tente novamente!\n");
+		exit(1);
+	}
 
 	for(i=0; i< elements_qt; i++)
 	{

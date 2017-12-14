@@ -234,7 +234,6 @@ void print_file(unsigned index, char* argv)
 	}
 
 	fclose(output);
-
 }
 
 
