@@ -144,9 +144,9 @@ def main():
     d.defineParticao(int(sys.argv[3]))
 
     #gera resultado no arquivo
-    d.geraResultado(nome)
+    d.geraResultado(nome + str(sys.argv[2]) + 'k')
 
-    arquivosaida = os.path.dirname(os.path.abspath(__file__)) + '\\' if os.name == 'nt' else nome + '.clu\n'
+    arquivosaida = os.path.dirname(os.path.abspath(__file__)) + '\\' if os.name == 'nt' else nome + str(sys.argv[2]) + 'k.clu\n'
     print('Partição resultante em:', arquivosaida)
 
 
