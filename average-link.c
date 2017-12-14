@@ -6,6 +6,9 @@
 
 /*Data struct for receive the elements from file*/
 
+/*Prova Real:
+https://www.wessa.net/rwasp_hierarchicalclustering.wasp
+*/
 
 typedef struct 
 {
