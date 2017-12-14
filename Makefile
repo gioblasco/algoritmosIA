@@ -2,24 +2,54 @@ make: single avg
 
 single:
 	gcc -g -Wall -o single-link single-link.c -lm
+
 avg:
 	gcc -g -Wall -o avg-link average-link.c -lm
-diff:
-	diff datasets/pequeno1.txt datasets/pequeno1.clu
-	diff datasets/pequeno2.txt datasets/pequeno2.clu
-	diff datasets/pequeno3.txt datasets/pequeno3.clu
-	diff datasets/pequeno4.txt datasets/pequeno4.clu
-	diff datasets/pequeno5.txt datasets/pequeno5.clu
-	diff datasets/pequeno6.txt datasets/pequeno6.clu
-pequeno:
-	./avg-link datasets/pequeno.txt 1 6
-	 $(MAKE) diff
 
-c1:
+cspkmeans:
+	python3 ./kmeans.py datasets/c2ds1-2sp.txt 5 10
+	python3 ./kmeans.py datasets/c2ds1-2sp.txt 6 10
+	python3 ./kmeans.py datasets/c2ds1-2sp.txt 7 10
+	python3 ./kmeans.py datasets/c2ds1-2sp.txt 8 10
+	python3 ./kmeans.py datasets/c2ds1-2sp.txt 9 10
+	python3 ./kmeans.py datasets/c2ds1-2sp.txt 10 10
+	python3 ./kmeans.py datasets/c2ds1-2sp.txt 11 10
+	python3 ./kmeans.py datasets/c2ds1-2sp.txt 12 10
+
+cgkmeans:
+	python3 ./kmeans.py datasets/c2ds3-2g.txt 5 10
+	python3 ./kmeans.py datasets/c2ds3-2g.txt 6 10
+	python3 ./kmeans.py datasets/c2ds3-2g.txt 7 10
+	python3 ./kmeans.py datasets/c2ds3-2g.txt 8 10
+	python3 ./kmeans.py datasets/c2ds3-2g.txt 9 10
+	python3 ./kmeans.py datasets/c2ds3-2g.txt 10 10
+	python3 ./kmeans.py datasets/c2ds3-2g.txt 11 10
+	python3 ./kmeans.py datasets/c2ds3-2g.txt 12 10
+
+monkeykmeans:
+	python3 ./kmeans.py datasets/monkey.txt 5 10
+	python3 ./kmeans.py datasets/monkey.txt 6 10
+	python3 ./kmeans.py datasets/monkey.txt 7 10
+	python3 ./kmeans.py datasets/monkey.txt 8 10
+	python3 ./kmeans.py datasets/monkey.txt 9 10
+	python3 ./kmeans.py datasets/monkey.txt 10 10
+	python3 ./kmeans.py datasets/monkey.txt 11 10
+	python3 ./kmeans.py datasets/monkey.txt 12 10
+
+cspsingle: single
+	./single-link datasets/c2ds1-2sp.txt 2 5
+
+cgsingle: single
+	./single-link datasets/c2ds3-2g.txt 2 5
+
+monkeysingle: single
+	./single-link datasets/monkey.txt 5 12
+
+cspavg: avg
 	./avg-link datasets/c2ds1-2sp.txt 2 5
 
-c2:
-	./avg-link datasets/
+cgavg: avg
+	./avg-link datasets/c2ds3-2g.txt 2 5
 
-monkey:
+monkeyavg: avg
 	./avg-link datasets/monkey.txt 5 12
