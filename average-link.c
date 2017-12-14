@@ -2,28 +2,51 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <float.h>
 
 /*Data struct for receive the elements from file*/
+
+
+typedef struct 
+{
+		float D1;
+		float D2;
+} Ponto;
+
+typedef union data
+{
+	unsigned indice_cluster;
+	Ponto p;
+} data;
+
 typedef struct 
 {
 	char string[32];
-	float D1;
-	float D2;
+	data d;
 } Elements;
 /***************/
 
 typedef struct
 {
 	size_t cluster_size; /*Quantos elementos tem no cluster*/
-	unsigned *elements; /*Índice dos elementos no vetor do arquivo de dados (Do tipo Elements)*/
+	//unsigned *elements; /*Índice dos elementos no vetor do arquivo de dados (Do tipo Elements)*/
 } Cluster;
+
+typedef struct
+{
+	float dist;
+	unsigned x;
+	unsigned y;
+} Menor_atual;
+
 
 /******Variaveis Globais******/
 float** dist_matrix;
 Cluster *clu;
-Elements *ele;
+Elements *elements;
 size_t cluster_qt; 
 size_t elements_qt;
+
 /*****************************/
 
 
@@ -32,17 +55,17 @@ int compara_unsigned(const void *e1, const void *e2); /*Pro qsort, ignorar*/
 void merge_matriz(unsigned i, unsigned j); /*Acho que ta bugada, temos que ver*/
 float busca_elemento(int x,int y); /*Essa função é para pessoas que possuem preguiça de pensar*/
 float min_avg(unsigned pivo, unsigned x, unsigned y); /*Coração do baguio*/
+void print_file(unsigned index, char* argv); /*Imprime saída para realizar o índice Rand*/
+void print_matrix();
 
 
-
-int main(int argc, char **argv)
+int main(int argc, char **argv) /* A MAIN TA PRONTA, NÃO CAGAR A NÃO SER QUE SEJA PARA DESCAGAR OUTRA COISA !!!!*/
 {
 	FILE *arquivo;
-	Elements *elements;
 	char buffer[128];
-	unsigned i, j, kmin, kmax, katual,ultimok, porcentagem;
+	unsigned i, j, kmin, kmax, porcentagem;
 	float dx, dy;
-	//tupla2 menor_atual;
+	Menor_atual menor_atual;
 	if(argc!=4 || !sscanf(argv[2], "%u", &kmin) || !sscanf(argv[3], "%u", &kmax))
 	{
 		printf("\nChamada inválida use: $ ./avg-link <dataset> <corte_mínimo> <corte_máximo>\n");
@@ -68,12 +91,12 @@ int main(int argc, char **argv)
 				return 1;
 			}
 		}
-		sscanf(buffer,"%s\t%f\t%f", elements[elements_qt].string, &elements[elements_qt].D1, &elements[elements_qt].D2);
+		sscanf(buffer,"%s\t%f\t%f", elements[elements_qt].string, &elements[elements_qt].d.p.D1, &elements[elements_qt].d.p.D2);
 	}
 	/*Setting free on non-used memmory: */
 	elements = (Elements*) realloc(elements, sizeof(Elements) *	elements_qt );
 	
-	printf("Arquivo carregado com sucesso! Calculando distâncias...\n");
+	printf("Arquivo carregado com sucesso!\nCalculando distâncias...\n");
 
 	/*Alloc of the matrix lines*/
 	dist_matrix = (float**) malloc(elements_qt  * sizeof(float*));
@@ -86,15 +109,22 @@ int main(int argc, char **argv)
 
 	for(i=0; i < elements_qt; i++)
 	{
+		porcentagem = (unsigned) (i / (float) elements_qt);
+		if(porcentagem%5==0)
+		printf("\rPorcentagem: %u", porcentagem);
 		dist_matrix[i] = malloc ( (i) * sizeof(float) );
 		for(j=0; j<i; j++)
 		{
-			dx = (elements[i].D1 - elements[j].D1);
-			dy = (elements[i].D2 - elements[j].D2);
+			dx = (elements[i].d.p.D1 - elements[j].d.p.D1);
+			dy = (elements[i].d.p.D2 - elements[j].d.p.D2);
 			dist_matrix[i][j] = sqrt( dx*dx  +  dy*dy );
 		}
 	}
 
+	for(i=0; i < elements_qt; i++)
+		elements[i].d.indice_cluster = i;
+
+	printf("\rPorcentagem: 100%%\n");
 	printf("Distâncias calculadas com sucesso!\n");
 
 
@@ -103,21 +133,36 @@ int main(int argc, char **argv)
 
 	printf("Criando agrupamentos iniciais...\n");
 	init_clusters();
-
-	while(cluster_qt > kmin)
+	printf("Agrupamentos Iniciais criados com sucesso, iterando o algoritmo.\n");
+	while(cluster_qt >= kmin)
 	{
-		for(i=0; i< elements_qt; i++){
-			for(j=0; i< elements_qt; i++){
-	  	//merge_matriz(i, j);
-			}
-		}
-    //merge_clusters();
+		if(cluster_qt >= kmin && cluster_qt <= kmax)
+			print_file(cluster_qt, argv[1]);
+
+		menor_atual.dist = FLT_MAX;
+		//print_matrix();
+		for(i = 1; i< cluster_qt; i++)
+			for(j=0; j < i ; j++)
+				if(dist_matrix[i][j] < menor_atual.dist)
+				{
+					menor_atual.dist = dist_matrix[i][j];
+					menor_atual.x = i;
+					menor_atual.y = j;
+				}
+		printf("Indo mesclar os índices: %u e %u\n", menor_atual.x, menor_atual.y);
+		merge_matriz(menor_atual.x, menor_atual.y);
 	}
 
 	return 0;
 }
 
-
+void print_matrix()
+{
+	unsigned c,d;
+	for(c=0; c < cluster_qt; c++, puts(""))
+		for(d = 0; d < c; d++)
+			printf("%.2f ", dist_matrix[c][d]);
+}
 void init_clusters()
 {
 	unsigned c;
@@ -125,8 +170,6 @@ void init_clusters()
 	for(c=0; c < elements_qt; c++)
 	{
 		clu[c].cluster_size = 1;
-		clu[c].elements = (unsigned*) malloc(sizeof(unsigned)); 
-		clu[c].elements[0] = c; /*Inicialmente todo cluster contém um elemento*/
 	}
 	cluster_qt = elements_qt;
 }
@@ -136,7 +179,6 @@ char merge_clusters(unsigned x, unsigned y)
 {
 
 	unsigned c;
-	unsigned temp = clu[x].cluster_size;
 	if(x==y)
 		return 0;
 	/*Vamos garantir que x é o menor*/
@@ -148,21 +190,14 @@ char merge_clusters(unsigned x, unsigned y)
 	}
 
 	clu[x].cluster_size += clu[y].cluster_size;
-	clu[x].elements = (unsigned *) realloc(clu[x].elements, sizeof(unsigned) * clu[x].cluster_size);
-
-	/*Jogando todos os elementos do cluster y no cluster x*/
-	for(c=temp; c < clu[x].cluster_size; c++) /*Linha incerta, conferir depois*/
-		clu[x].elements[c] = clu[y].elements[c-temp];
-
-	free(clu[y].elements);
-	/*É uma boa prática mantermos o cluster ordenado para depois fazermos busca binária:
-
-	qsort(clu[x].elements, clu[x].cluster_size, sizeof(unsigned), compara_unsigned);
-
-	Porém acho que não compensa ficar dando sorte  a cada merge, podemos dar sort só quando for imprimir no arquivo
-	*/
-
 	cluster_qt--;
+
+	for(c = 0; c < elements_qt; c++){
+		if(elements[c].d.indice_cluster == y)
+			elements[c].d.indice_cluster = x;
+		else if (elements[c].d.indice_cluster > y)
+			elements[c].d.indice_cluster--;
+	}
 	for(c = y; c < cluster_qt; c++)
 		clu[c] = clu[c + 1];
 	
@@ -249,3 +284,30 @@ float busca_elemento(int x,int y)
 		return dist_matrix[x][y];
 	return dist_matrix[y][x];
 }
+
+
+void print_file(unsigned index, char* argv)
+{
+	unsigned i/*,d,t;*/;
+	char temp1[128], temp2[128];
+	//d = mapear();
+	strcpy(temp1, argv);
+	strtok(temp1, ".");
+	sprintf(temp2, "%s%u.clu",temp1,index);
+	FILE *output;
+	printf("Imprimindo o arquivo %s\n", temp2);
+	output = fopen(temp2, "w");
+
+	for(i=0; i< elements_qt; i++)
+	{
+		fprintf(output, "%s\t%u\n", elements[i].string, elements[i].d.indice_cluster+1);
+	}
+
+	fclose(output);
+}
+
+
+
+
+
+
