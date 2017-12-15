@@ -1,6 +1,0 @@
-c2sp1s1	1
-c2sp1s2	1
-c2sp1s3	1
-c2sp1s4	1
-c2sp1s5	1
-c2sp1s6	1
